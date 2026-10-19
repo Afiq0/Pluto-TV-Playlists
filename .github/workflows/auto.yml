@@ -1,0 +1,49 @@
+name: Auto Pluto Update
+
+on:
+  schedule:
+    - cron: '0 */12 * * *' # Berjalan setiap 12 jam
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run scraper
+        run: node index.js
+
+      - name: Reset history and push single commit
+        run: |
+          # 1. Padam sejarah git lama
+          rm -rf .git
+
+          # 2. Inisialisasi semula git repo tempatan
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # 3. Tetapkan nama branch kepada main
+          git checkout -b main
+
+          # 4. Tambah fail dan buat commit baharu
+          git add .
+          git commit -m "Auto update playlist (cleared history)"
+
+          # 5. Connect semula ke remote repo & force push
+          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git push --force origin main
